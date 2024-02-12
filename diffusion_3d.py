@@ -9,20 +9,66 @@ sweaped_file = "sweaped.csv"
 heatcap_file = "Si_heatcap_100.txt"
 conductivitycurve_file = "conductivity.csv"
 
+
 #一つのdirectoryに対し, sweapを書き出す
-def printsweap(directory):
+def printsweap(directory: str) -> None:
+	"""directory中にある, 変位ファイルの情報を書き出す
+		directoryのパスで示されるディレクトリーの中のファイルのうち,
+		変位ファイル(後述の規則に従うファイル名を持つ)に当たるものを検知し, その情報をdirectory下の"sweap.csv"に書き出す
+		
+		変位ファイルはシミュレーター(https://github.com/ButterPeanuts/Research_mod2)の粒子位置を記録したもの
+		1行に1つの粒子について記述, 1列目から順にx座標, y座標, z座標
+		
+		変位ファイルのファイル名は以下のような命名規則がある
+		prefix + str(log_10(t_sim)) + suffix
+		2024/02/13現在, prefixは"Dispacement", suffixは".txt"
+		また, t_simはシミュレーション開始から変位ファイル記録までに(シミュレーション空間において)経過した時間(単位[s]を省略)
+		
+		prefixは"Displacement", suffixは".csv"とすべきであるが, ミスでこうなっている だれかなおして
+		
+		sweap.csvの構成は1行に1つの変位ファイルについて記述, 1列目はファイル名, 2列目はlog_10(t_sim)
+		また, 出力時にlog_10(t_sim)の昇順(つまりt_simの昇順)にソートする
+		
+		Args:
+			directory (str): 情報書き出し対象のディレクトリー
+		
+		Example:
+			>>> # これは実際のファイル構成とは違う
+			>>> import os
+			>>> os.listdir("example")
+				["Dispacement-8.txt", "Dispacement-7.txt"]
+			>>> printsweap("example")
+			>>> os.listdir("example")
+				["Dispacement-8.txt", "Dispacement-7.txt", "sweap.csv"]
+			>>> # sweap.csvの中身
+			>>> # -8,Dispacement-8.txt
+			>>> # -7,Dispacement-7.txt
+		
+		Note:
+			[急募]いちいちsweap.csvに書き出す理由
+		
+		Todo:
+			* flake8的には最初の行のosとcsvを両方インポートするのがNGらしいので分けたほうがいいかも
+			* sweaplistをsweap.csvに書き出すのではなくそのままreturnすれば良いのでは感がある
+	"""
 	import os, csv
 	
-	filenames = os.listdir(directory)
+	#directoryの中にある全ファイルをListとして取得
+	filenames = os.listdir(directory)  # type: List[str]
 	
-	sweaplist = []
+	#sweap.csvに書く内容を入れるList
+	sweaplist = []  # type: List[str]
+	
 	for i in filenames:
-		# print(i.removeprefix(prefix), i)
+		# prefixを消せない(ファイル名にprefixがついてない)なら飛ばす
 		if (i.removeprefix(prefix) != i):
+			# [i, iからprefixとsuffix消してfloatに変換したもの(log_10(t_sim))]をsweaplistに入れる
 			sweaplist.append([i, float((i.removeprefix(prefix)).removesuffix(suffix))])
 	
-	# print(sweaplist)
+	# sweaplistをlog_10(t_sim)昇順にソート
 	sweaplist.sort(key=lambda x: x[1])
+	
+	# directory内にsweap.csvを作ってsweaplistを書き出す
 	with open(directory + "\sweap.csv", "w", newline="") as file:
 		writer = csv.writer(file)
 		writer.writerows(sweaplist)
